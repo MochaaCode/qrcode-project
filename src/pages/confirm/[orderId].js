@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { db } from "../../lib/firebase"; // Import db
+import { db } from "../../../lib/firebase"; // Import db
 import { doc, setDoc } from "firebase/firestore"; // Import fungsi firestore
 
 export default function ConfirmPage() {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { QRCodeSVG } from "qrcode.react";
-import { db } from "../../lib/firebase"; // Import db
+import { db } from "../../../lib/firebase"; // Import db
 import { doc, onSnapshot } from "firebase/firestore"; // Import fungsi firestore
 
 export default function PaymentPage() {
