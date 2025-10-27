@@ -1,14 +1,23 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
+import { db } from "../../lib/firebase"; // Import db
+import { doc, setDoc } from "firebase/firestore"; // Import fungsi firestore
 
 export default function ConfirmPage() {
   const router = useRouter();
   const { orderId } = router.query;
   const [confirmed, setConfirmed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (orderId) {
-      localStorage.setItem(`payment_status_${orderId}`, "PAID");
+      setLoading(true);
+      // Simpan status ke Firestore
+      await setDoc(doc(db, "payments", orderId), {
+        status: "PAID",
+        confirmedAt: new Date(),
+      });
+      setLoading(false);
       setConfirmed(true);
     }
   };

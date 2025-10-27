@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { QRCodeSVG } from "qrcode.react";
+import { db } from "../../lib/firebase"; // Import db
+import { doc, onSnapshot } from "firebase/firestore"; // Import fungsi firestore
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -14,23 +16,19 @@ export default function PaymentPage() {
     }
   }, [orderId]);
 
+  // Dengarkan perubahan status pembayaran dari Firestore
   useEffect(() => {
     if (!orderId) return;
-    const paymentStatusKey = `payment_status_${orderId}`;
-    const intervalId = setInterval(() => {
-      const status = localStorage.getItem(paymentStatusKey);
-      if (status === "PAID") {
-        clearInterval(intervalId);
-        localStorage.removeItem(paymentStatusKey);
+
+    const unsub = onSnapshot(doc(db, "payments", orderId), (doc) => {
+      if (doc.exists() && doc.data().status === "PAID") {
         router.push(`/success/${orderId}`);
       }
-    }, 2000);
-    return () => clearInterval(intervalId);
-  }, [orderId, router]);
+    });
 
-  if (!orderId) {
-    return <div className="p-6 text-center">Loading...</div>;
-  }
+    // Hentikan listener saat komponen di-unmount
+    return () => unsub();
+  }, [orderId, router]);
 
   return (
     <div className="p-6 bg-white min-h-full shadow-md sm:rounded-lg text-center">

@@ -1,14 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useCart } from "../context/CartContext";
-import { allProducts, categories } from "../../lib/data";
+import { db } from "../../lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function HomePage() {
   const { cart, addToCart } = useCart();
   const router = useRouter();
 
+  const [allProducts, setAllProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const querySnapshot = await getDocs(collection(db, "products"));
+      const productsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setAllProducts(productsData);
+
+      // Ambil kategori dari data produk
+      const uniqueCategories = [
+        "Semua",
+        ...new Set(productsData.map((p) => p.category)),
+      ];
+      setCategories(uniqueCategories);
+      setLoading(false);
+    };
+
+    fetchProducts();
+  }, []);
 
   const filteredProducts = allProducts
     .filter((product) => {
@@ -19,8 +45,12 @@ export default function HomePage() {
       return product.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
-  // Hitung total item di keranjang
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Tampilkan loading state
+  if (loading) {
+    return <div className="text-center p-10">Loading produk...</div>;
+  }
 
   return (
     // Beri bg-white, shadow, dan padding bottom untuk sticky bar
