@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { db } from "../../../lib/firebase"; // Import db
-import { doc, setDoc } from "firebase/firestore"; // Import fungsi firestore
+import { supabase } from "../../../lib/supabase"; // Import supabase, bukan db
 
 export default function ConfirmPage() {
   const router = useRouter();
@@ -12,13 +11,23 @@ export default function ConfirmPage() {
   const handleConfirm = async () => {
     if (orderId) {
       setLoading(true);
-      // Simpan status ke Firestore
-      await setDoc(doc(db, "payments", orderId), {
-        status: "PAID",
-        confirmedAt: new Date(),
-      });
-      setLoading(false);
-      setConfirmed(true);
+      try {
+        // Simpan status ke tabel payments di Supabase
+        const { error } = await supabase.from("payments").upsert({
+          order_id: orderId,
+          status: "PAID",
+          confirmed_at: new Date(),
+        });
+
+        if (error) throw error;
+
+        setConfirmed(true);
+      } catch (error) {
+        console.error("Gagal konfirmasi:", error.message);
+        alert("Terjadi kesalahan saat konfirmasi.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -26,7 +35,6 @@ export default function ConfirmPage() {
     <div className="p-6 bg-white min-h-full shadow-md sm:rounded-lg text-center">
       {confirmed ? (
         <div>
-          {/* Tampilan setelah konfirmasi */}
           <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg
               className="h-12 w-12"
@@ -47,25 +55,25 @@ export default function ConfirmPage() {
             Konfirmasi Terkirim!
           </h2>
           <p className="text-gray-700">
-            Anda bisa menutup tab ini dan kembali ke halaman pembayaran.
+            Anda bisa menutup tab ini dan kembali ke halaman utama.
           </p>
         </div>
       ) : (
         <div>
-          {/* Tampilan sebelum konfirmasi */}
           <h2 className="text-2xl font-bold mb-4">Konfirmasi Pembayaran?</h2>
           <p className="text-gray-700 mb-6">
             Pesanan ID:{" "}
             <span className="font-mono bg-gray-100 p-1 rounded">{orderId}</span>
           </p>
-          <div className="p-4 bg-white rounded-lg">
-            <button
-              onClick={handleConfirm}
-              className="w-full px-4 py-3 bg-green-500 text-white rounded-lg font-bold text-lg hover:bg-green-600 transition-colors"
-            >
-              Ya, Konfirmasi Pembayaran
-            </button>
-          </div>
+          <button
+            onClick={handleConfirm}
+            disabled={loading}
+            className={`w-full px-4 py-3 text-white rounded-lg font-bold text-lg transition-colors ${
+              loading ? "bg-gray-400" : "bg-green-500 hover:bg-green-600"
+            }`}
+          >
+            {loading ? "Memproses..." : "Ya, Konfirmasi Pembayaran"}
+          </button>
         </div>
       )}
     </div>

@@ -3,11 +3,16 @@ import Link from "next/link";
 import { useCart } from "../context/CartContext";
 
 export default function CheckoutPage() {
-  const { cart, total } = useCart();
+  // 1. Ambil clearCart dari useCart()
+  const { cart, total, clearCart } = useCart();
   const router = useRouter();
 
   const handleCheckout = () => {
     const orderId = `order-${Date.now()}`;
+
+    // 2. Kosongkan keranjang tepat sebelum pindah ke halaman pembayaran
+    clearCart();
+
     router.push(`/payment/${orderId}`);
   };
 
@@ -57,6 +62,7 @@ export default function CheckoutPage() {
       >
         Konfirmasi & Bayar
       </button>
+
       <Link
         href="/"
         className="block w-full mt-3 text-center text-indigo-600 font-medium hover:text-indigo-800"
