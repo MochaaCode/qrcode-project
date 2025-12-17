@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useCart } from "../context/CartContext";
-import { db } from "../../lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { supabase } from "../../lib/supabase";
 
 export default function HomePage() {
   const { cart, addToCart } = useCart();
@@ -17,20 +16,25 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const querySnapshot = await getDocs(collection(db, "products"));
-      const productsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setAllProducts(productsData);
+      try {
+        const { data, error } = await supabase.from("products").select("*");
 
-      // Ambil kategori dari data produk
-      const uniqueCategories = [
-        "Semua",
-        ...new Set(productsData.map((p) => p.category)),
-      ];
-      setCategories(uniqueCategories);
-      setLoading(false);
+        if (error) throw error;
+
+        if (data) {
+          setAllProducts(data);
+
+          const uniqueCategories = [
+            "Semua",
+            ...new Set(data.map((p) => p.category)),
+          ];
+          setCategories(uniqueCategories);
+        }
+      } catch (error) {
+        console.error("Kesalahan koneksi Supabase:", error.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchProducts();
